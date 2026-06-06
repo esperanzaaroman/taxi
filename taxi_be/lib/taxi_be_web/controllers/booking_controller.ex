@@ -1,15 +1,14 @@
 defmodule TaxiBeWeb.BookingController do
   use TaxiBeWeb, :controller
-  # alias TaxiBeWeb.TaxiAllocationJob
+  alias TaxiBeWeb.TaxiAllocationJob
   def create(conn, req) do
-    IO.inspect(req)
-    # booking_id = UUID.uuid1()
-    # TaxiAllocationJob.start_link(
-    #   req |> Map.put("booking_id", booking_id),
-    #   String.to_atom(booking_id)
-    # )
+    booking_id = UUID.uuid1()
+    TaxiBeWeb.TaxiAllocationJob.start_link(
+      req |> Map.put("booking_id", booking_id),
+      String.to_atom(booking_id)
+    )
     conn
-    |> put_resp_header("Location", "/api/123") # "/api/bookings/" <> booking_id)
+    |> put_resp_header("Location", "/api/bookings/" <> booking_id)
     |> put_status(:created)
     |> json(%{msg: "We are processing your request"})
   end
