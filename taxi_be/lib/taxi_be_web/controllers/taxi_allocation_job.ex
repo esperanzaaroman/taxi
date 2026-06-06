@@ -58,6 +58,16 @@ defmodule TaxiBeWeb.TaxiAllocationJob do
     {:noreply, state}
   end
 
+  def handle_cast({:process_reject, _username}, %{timer: timer} = state) do
+    if timer != nil, do: Process.cancel_timer(timer)
+    {taxi, others, new_timer} = offer_to_next(state)
+    {:noreply,
+    state
+    |> Map.put(:taxi, taxi)
+    |> Map.put(:candidates, others)
+    |> Map.put(:timer, new_timer)}
+  end
+
   def offer_to_next(%{request: %{"username" => username}, candidates: []} = _state) do
   TaxiBeWeb.Endpoint.broadcast(
     "customer:" <> username,
