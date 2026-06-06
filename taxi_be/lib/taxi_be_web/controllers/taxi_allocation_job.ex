@@ -34,26 +34,37 @@ defmodule TaxiBeWeb.TaxiAllocationJob do
   end
 
   def handle_info(:timeout, state) do
-    IO.puts("Boom!!")
-    IO.inspect(state)
-    {taxi, others, timer} = offer_to_next(state)
-    {:noreply,
-     state
-     |> Map.put(:taxi, taxi)
-     |> Map.put(:candidates, others)
-     |> Map.put(:timer, timer)}
+  IO.puts("Boom!!")
+  IO.inspect(state)
+  {taxi, others, timer} = offer_to_next(state)
+  {:noreply,
+    state
+    |> Map.put(:taxi, taxi)
+    |> Map.put(:candidates, others)
+    |> Map.put(:timer, timer)}
   end
 
-  def handle_cast({:process_accept, username}, %{timer: timer} = state) do
+  def handle_cast({:process_accept, _username}, %{timer: timer, request: request} = state) do
     if timer != nil, do: Process.cancel_timer(timer)
 
+    %{"username" => customer_username} = request
+
     TaxiBeWeb.Endpoint.broadcast(
-      "customer:" <> username,
+      "customer:" <> customer_username,
       "booking_request",
       %{msg: "Tu taxi está en camino"}
     )
 
     {:noreply, state}
+  end
+
+  def offer_to_next(%{request: %{"username" => username}, candidates: []} = _state) do
+  TaxiBeWeb.Endpoint.broadcast(
+    "customer:" <> username,
+    "booking_request",
+    %{msg: "No hay taxis disponibles en este momento"}
+  )
+  {nil, [], nil}
   end
 
   def offer_to_next(%{request: request, candidates: [taxi | others]} = _state) do
