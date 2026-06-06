@@ -30,18 +30,30 @@ defmodule TaxiBeWeb.TaxiAllocationJob do
      state
      |> Map.put(:taxi, taxi)
      |> Map.put(:candidates, others)
-     |> Map.put(:timer, timer)}
+     |> Map.put(:timer, timer)
+     |> Map.put(:attempts, 1)}
   end
 
-  def handle_info(:timeout, state) do
-  IO.puts("Boom!!")
-  IO.inspect(state)
-  {taxi, others, timer} = offer_to_next(state)
-  {:noreply,
+  def handle_info(:timeout, %{taxi: taxi} = state) do
+    IO.puts("Boom!!")
+    IO.inspect(state)
+
+    # avisarle al conductor que ya no necesita responder
+    if taxi != nil do
+      TaxiBeWeb.Endpoint.broadcast(
+        "driver:" <> taxi.nickname,
+        "booking_expired",
+        %{msg: "La solicitud expiró"}
+      )
+    end
+
+    {new_taxi, others, timer} = offer_to_next(state)
+    {:noreply,
     state
-    |> Map.put(:taxi, taxi)
+    |> Map.put(:taxi, new_taxi)
     |> Map.put(:candidates, others)
-    |> Map.put(:timer, timer)}
+    |> Map.put(:timer, timer)
+    |> Map.put(:attempts, attempts)}
   end
 
   def handle_cast({:process_accept, _username}, %{timer: timer, request: request} = state) do
@@ -65,18 +77,27 @@ defmodule TaxiBeWeb.TaxiAllocationJob do
     state
     |> Map.put(:taxi, taxi)
     |> Map.put(:candidates, others)
-    |> Map.put(:timer, new_timer)}
+    |> Map.put(:timer, new_timer)
+    |> Map.put(:attempts, attempts)}
   end
 
-  def offer_to_next(%{request: %{"username" => username}, candidates: []} = _state) do
-  TaxiBeWeb.Endpoint.broadcast(
-    "customer:" <> username,
-    "booking_request",
-    %{msg: "No hay taxis disponibles en este momento"}
-  )
-  {nil, [], nil}
+  # se acabaron candidatos pero aún hay intentos
+  def offer_to_next(%{request: request, candidates: [], attempts: attempts} = state) when attempts < 4 do
+    new_candidates = candidate_taxis() |> Enum.shuffle()
+    offer_to_next(state |> Map.put(:candidates, new_candidates) |> Map.put(:attempts, attempts + 1))
   end
 
+  # se acabaron candidatos y ya se agotaron los intentos
+  def offer_to_next(%{request: %{"username" => username}, candidates: [], attempts: _attempts} = _state) do
+    TaxiBeWeb.Endpoint.broadcast(
+      "customer:" <> username,
+      "booking_request",
+      %{msg: "No fue posible encontrar un taxi, intenta más tarde"}
+    )
+    {nil, [], nil}
+  end
+
+# hay candidatos disponibles
   def offer_to_next(%{request: request, candidates: [taxi | others]} = _state) do
     %{
       "pickup_address" => pickup_address,

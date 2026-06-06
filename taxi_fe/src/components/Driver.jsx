@@ -16,6 +16,9 @@ function Driver(props) {
       setBookingId(data.bookingId);
       setVisible(true);
     });
+    channel.on("booking_expired", _data => {
+      setVisible(false);
+    });
     channel.join();
   },[props]);
 
