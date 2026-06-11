@@ -1,9 +1,9 @@
 defmodule TaxiBeWeb.BookingController do
   use TaxiBeWeb, :controller
-  alias TaxiBeWeb.TaxiAllocationJob
+  alias TaxiBeWeb.TaxiAllocationJobV2
   def create(conn, req) do
     booking_id = UUID.uuid1()
-    TaxiBeWeb.TaxiAllocationJob.start_link(
+    TaxiBeWeb.TaxiAllocationJobV2.start_link(
       req |> Map.put("booking_id", booking_id),
       String.to_atom(booking_id)
     )
