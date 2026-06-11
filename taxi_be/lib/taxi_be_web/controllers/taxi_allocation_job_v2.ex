@@ -73,6 +73,20 @@ defmodule TaxiBeWeb.TaxiAllocationJobV2 do
     )
     {:noreply, Map.put(state, :accepted, true)}
   end
+  #Manejo de timeout (me pasa mucho con rappi)
+  def handle_info(:timeout, %{accepted: false, request: request}= state) do
+    %{"username"=> username} = request
+    TaxiBeWeb.Endpoint.broadcast(
+      "customer:" <> username,
+      "booking_request",
+      %{msg: "No fue posible encontrar un taxi para ti :( "}
+    )
+    {:noreply, state}
+  end
+
+  def handle_info(:timeout, state) do
+    {:noreply, state}
+  end
   #para notificar a todos
 
   def notify_all_drivers(request, candidates) do
