@@ -43,7 +43,36 @@ defmodule TaxiBeWeb.TaxiAllocationJobV2 do
     |> Map.put(:timer, timer)
     |> Map.put(:accepted, false)}
   end
+  #--Handle CAsts de aceptar
 
+  #aceptacion cuando ya alguien acepto
+
+  def handle_cast({:process_accept, _username},%{accepted: true}= state) do
+    {:noreply, state}
+  end
+
+  #primer conductor que acepta el MVP
+
+  def handle_cast({:process_accept, _username}, %{timer: timer, request: request, candidates: candidates} = state) do
+    if timer != nil, do: Process.cancel_timer(timer)
+
+    %{"username" => customer_username} = request
+
+    Enum.each(candidates, fn candidate ->
+      TaxiBeWeb.Endpoint.broadcast(
+        "driver:" <> candidate.nickname,
+        "booking_expired",
+        %{msg: "El viaje ya fue asignado a otro conductor"}
+      )
+
+    end)
+    TaxiBeWeb.Endpoint.broadcast(
+      "customer:" <> customer_username,
+      "booking_request",
+      %{msg: "Tu taxi está en camino"}
+    )
+    {:noreply, Map.put(state, :accepted, true)}
+  end
   #para notificar a todos
 
   def notify_all_drivers(request, candidates) do
