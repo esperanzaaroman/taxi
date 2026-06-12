@@ -1,14 +1,13 @@
 import React, {useEffect, useState, useRef} from 'react';
 import Button from '@mui/material/Button';
 import socket from '../services/taxi_socket';
-import { Card, CardContent, Typography } from '@mui/material';
+import { Card, CardContent, Typography, Box } from '@mui/material';
 
 function Driver(props) {
   let [message, setMessage] = useState("Esperando viajes...");
   let [bookingId, setBookingId] = useState();
   //Cambie a status para tener mas controlcito :PPPP
   let [status, setStatus] = useState("idle");
-
   const timerRef = useRef(null); // Referencia para el timer de cancelación
 
   // Función para matar el temporizador anterior
@@ -76,58 +75,62 @@ useEffect(() => {
     });
   };
 
-  const getCardColor = () => {
-    if (status === "cancelled" || status === "expired") return "#d32f2f"; 
-    if (status === "accepted") return "#2e7d32"; 
-    return "#1976d2"; 
-  };
+// const getColorByStatus = () => {
+//     if (status === "cancelled" || status === "expired") return "#EF4444"; // Rojo estético
+//     if (status === "accepted") return "#10B981"; // Verde esmeralda
+//     return "#3B82F6"; // Azul moderno
+//   };
 
-  return (
-    <div style={{textAlign: "center", borderStyle: "solid", marginBottom: "10px", borderColor: "#ccc"}}>
-        {}
-        <div style={{backgroundColor: "#222", color: "white", padding: "8px", fontWeight: "bold"}}>
-            Driver: {props.username}
-        </div>
+return (
+    <Box sx={{ 
+      maxWidth: 450, 
+      margin: '40px auto', 
+      fontFamily: "'Inter', sans-serif", // La font bonita
+      textAlign: 'center'
+    }}>
+        <Typography sx={{ fontSize: '0.8rem', color: '#999', letterSpacing: '2px', mb: 1, textTransform: 'uppercase' }}>
+          Conductor
+        </Typography>
+        <Typography sx={{ fontSize: '1.5rem', fontWeight: '600', mb: 4, color: '#111' }}>
+          {props.username}
+        </Typography>
         
-        <div style={{backgroundColor: "lavender", minHeight: "140px", display: "flex", alignItems: "center", justifyContent: "center", padding: "10px"}}>
-          {
-            status === "idle" ? (
-              <Typography color="textSecondary" style={{ fontStyle: "italic" }}>
-                Sin viajes activos...
-              </Typography>
+        <Box sx={{ 
+            minHeight: '100px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            backgroundColor: '#fff',
+            border: '1px solid #eee',
+            borderRadius: '24px',
+            padding: '30px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.05)' // Sombra muy sutil
+        }}>
+          {status === "idle" ? (
+              <Typography sx={{ color: '#888', fontWeight: '300' }}>Sin viajes activos</Typography>
             ) : (
-              <Card variant="outlined" style={{
-                  margin: "auto", 
-                  width: "600px", 
-                  borderColor: status === "cancelled" ? "#d32f2f" : "#1976d2",
-                  borderWidth: "2px"
-              }}>
-                <CardContent>
-                  <Typography color={status === "cancelled" ? "error" : "textPrimary"} variant="h6">
-                    {message}
-                  </Typography>
-                </CardContent>
+              <Box sx={{ width: '100%' }}>
+                <Typography sx={{ fontSize: '1.1rem', fontWeight: '400', color: '#333', mb: 3, lineHeight: 1.5 }}>
+                  {message}
+                </Typography>
                 
-                {}
                 {status === "requested" && (
-                 <div style={{ paddingBottom: "15px", display: "flex", justifyContent: "center", gap: "15px" }}>
-                    <Button onClick={() => reply("accept")} variant="contained" color="primary">Accept</Button>
-                    <Button onClick={() => reply("reject")} variant="outlined" color="error">Reject</Button>
-                  </div>
+                  <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+                    <Button onClick={() => reply("accept")} sx={{ backgroundColor: '#111', color: '#fff', borderRadius: '12px', padding: '10px 25px', '&:hover': { backgroundColor: '#333' } }}>Aceptar</Button>
+                    <Button onClick={() => reply("reject")} sx={{ color: '#555', textTransform: 'none' }}>Rechazar</Button>
+                  </Box>
                 )}
 
-                {}
                 {status === "accepted" && (
-                  <div style={{ paddingBottom: "15px", display: "flex", justifyContent: "center" }}>
-                    <Button onClick={() => reply("cancel")} variant="outlined" color="error">Me arrepentí (Cancelar)</Button>
-                  </div>
+                  <Button onClick={() => reply("cancel")} variant="text" sx={{ color: '#ff4d4f', textTransform: 'none', fontWeight: '600' }}>Cancelar viaje</Button>
                 )}
-              </Card>
+              </Box>
             )
           }
-        </div>
-    </div>
+        </Box>
+    </Box>
   );
 }
 
 export default Driver;
+
