@@ -73,6 +73,26 @@ defmodule TaxiBeWeb.TaxiAllocationJobV2 do
     )
     {:noreply, Map.put(state, :accepted, true)}
   end
+
+  # cliente cancela antes de que alguien acepte
+  def handle_cast({:process_cancel, _username}, %{timer: timer, candidates: candidates, accepted: false} = state) do
+
+    if timer != nil, do: Process.cancel_timer(timer)
+
+    # avisar al conductor actual que ya no necesita responder
+    Enum.each(candidates, fn candidate ->
+      TaxiBeWeb.Endpoint.broadcast(
+        "driver:" <> candidate.nickname,
+        "booking_expired",
+        %{msg: "El cliente canceló el viaje"}
+      )
+    end)
+
+    {:noreply, Map.put(state, :cancelled, true)}
+  end
+
+
+
   #Manejo de timeout (me pasa mucho con rappi)
   def handle_info(:timeout, %{accepted: false, request: request}= state) do
     %{"username"=> username} = request
