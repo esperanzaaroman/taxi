@@ -53,7 +53,7 @@ defmodule TaxiBeWeb.TaxiAllocationJobV2 do
 
   #primer conductor que acepta el MVP
 
-  def handle_cast({:process_accept, _username}, %{timer: timer, request: request, candidates: candidates} = state) do
+  def handle_cast({:process_accept, username}, %{timer: timer, request: request, candidates: candidates} = state) do
     if timer != nil, do: Process.cancel_timer(timer)
 
     %{"username" => customer_username} = request
@@ -71,13 +71,20 @@ defmodule TaxiBeWeb.TaxiAllocationJobV2 do
       "booking_request",
       %{msg: "Tu taxi está en camino"}
     )
-    {:noreply, Map.put(state, :accepted, true)}
+    taxi_asignado = %{nickname: username}
+    {:noreply, state |> Map.put(:accepted, true) |> Map.put(:taxi, taxi_asignado)}
   end
 
   # cliente cancela antes de que alguien acepte
-  def handle_cast({:process_cancel, _username}, %{timer: timer, candidates: candidates, accepted: false} = state) do
+  def handle_cast({:process_cancel, username}, %{timer: timer, candidates: candidates, accepted: false} = state) do
 
     if timer != nil, do: Process.cancel_timer(timer)
+
+    TaxiBeWeb.Endpoint.broadcast(
+      "customer:"<> username,
+      "booking_request",
+      %{msg: "Tu cuota de recuperación es de 1,000,000 dolares, ¡¡¡¡GRACIAS POR USAR NUESTRO SERVICIO!!!!"}
+    )
 
     # avisar al conductor actual que ya no necesita responder
     Enum.each(candidates, fn candidate ->
@@ -91,7 +98,25 @@ defmodule TaxiBeWeb.TaxiAllocationJobV2 do
     {:noreply, Map.put(state, :cancelled, true)}
   end
 
+  def handle_cast({:process_cancel, username}, %{taxi: taxi, accepted: true} = state) do
+    # avisar al conductor asignado que el cliente canceló
 
+    TaxiBeWeb.Endpoint.broadcast(
+      "customer:"<> username,
+      "booking_request",
+      %{msg: "Tu conductor chocó porque se puso muy triste por tu cancelación :(((("}
+    )
+
+    if taxi != nil do
+      TaxiBeWeb.Endpoint.broadcast(
+        "driver:" <> taxi.nickname,
+        "booking_cancelled",
+        %{msg: "El cliente canceló el viaje"}
+      )
+    end
+
+    {:noreply, Map.put(state, :cancelled, true)}
+  end
 
   #Manejo de timeout (me pasa mucho con rappi)
   def handle_info(:timeout, %{accepted: false, request: request}= state) do
