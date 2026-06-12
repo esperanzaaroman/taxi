@@ -98,7 +98,7 @@ defmodule TaxiBeWeb.TaxiAllocationJobV2 do
     {:noreply, Map.put(state, :cancelled, true)}
   end
 
-  def handle_cast({:process_cancel, username}, %{taxi: taxi, accepted: true} = state) do
+  def handle_cast({:process_cancel, username}, %{request: %{"username" => username}, taxi: taxi, accepted: true} = state) do
     # avisar al conductor asignado que el cliente canceló
 
     TaxiBeWeb.Endpoint.broadcast(
@@ -116,6 +116,22 @@ defmodule TaxiBeWeb.TaxiAllocationJobV2 do
     end
 
     {:noreply, Map.put(state, :cancelled, true)}
+  end
+
+
+  def handle_cast({:process_cancel, username}, %{taxi: %{nickname: username}, request: request} = state) do
+    IO.inspect("El conductor #{username} canceló el viaje de forma cobarde")
+
+    %{"username" => customer_username} = request
+
+    # Notificar al cliente que su conductor lo odia y le canceló el viaje
+    TaxiBeWeb.Endpoint.broadcast(
+      "customer:" <> customer_username,
+      "booking_request",
+      %{msg: "Tu conductor canceló el viaje, por favor intenta de nuevo"}
+    )
+
+    {:noreply, Map.put(state, :accepted, false)}
   end
 
   #Manejo de timeout (me pasa mucho con rappi)

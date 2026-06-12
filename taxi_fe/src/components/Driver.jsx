@@ -68,6 +68,11 @@ useEffect(() => {
       else if (decision === "accept") {
         setTemporaryStatus("accepted", "¡Aceptaste el viaje! Dirígete por tu cliente...");
       }
+
+      else if (decision === "cancel") {
+        clearTimer();
+        setStatus("idle");
+      }
     });
   };
 
@@ -105,9 +110,16 @@ useEffect(() => {
                 
                 {}
                 {status === "requested" && (
-                  <div style={{ paddingBottom: "15px", display: "flex", justifyContent: "center", gap: "15px" }}>
+                 <div style={{ paddingBottom: "15px", display: "flex", justifyContent: "center", gap: "15px" }}>
                     <Button onClick={() => reply("accept")} variant="contained" color="primary">Accept</Button>
                     <Button onClick={() => reply("reject")} variant="outlined" color="error">Reject</Button>
+                  </div>
+                )}
+
+                {}
+                {status === "accepted" && (
+                  <div style={{ paddingBottom: "15px", display: "flex", justifyContent: "center" }}>
+                    <Button onClick={() => reply("cancel")} variant="outlined" color="error">Me arrepentí (Cancelar)</Button>
                   </div>
                 )}
               </Card>
